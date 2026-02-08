@@ -1,0 +1,82 @@
+#!/bin/bash
+#
+# MoviePilot SPK - 服务管理脚本
+# 群晖套件中心通过此脚本管理服务的 启动/停止/状态
+#
+
+PACKAGE_NAME="MoviePilot"
+PACKAGE_DIR="/var/packages/${PACKAGE_NAME}/target"
+CONTAINER_NAME="moviepilot-mod"
+ENV_FILE="${PACKAGE_DIR}/.env"
+
+# 加载环境变量
+if [ -f "$ENV_FILE" ]; then
+    . "$ENV_FILE"
+fi
+
+DOCKER_IMAGE="${DOCKER_IMAGE:-txyelva/movpilottt:latest}"
+CONFIG_DIR="${CONFIG_DIR:-/volume1/docker/moviepilot/config}"
+NGINX_PORT="${NGINX_PORT:-3000}"
+PUID="${PUID:-1000}"
+PGID="${PGID:-1000}"
+UMASK="${UMASK:-000}"
+TZ="${TZ:-Asia/Shanghai}"
+
+case "$1" in
+    start)
+        # 如果容器已存在但停止了，先移除再重建
+        if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+            docker rm -f "$CONTAINER_NAME" 2>/dev/null || true
+        fi
+
+        echo "正在启动 MoviePilot..."
+        docker run -d \
+            --name "$CONTAINER_NAME" \
+            --hostname moviepilot \
+            --restart unless-stopped \
+            --network bridge \
+            -p "${NGINX_PORT}:3000" \
+            -v "${CONFIG_DIR}:/config" \
+            -v /volume1:/volume1 \
+            -e "MOVIEPILOT_AUTO_UPDATE=false" \
+            -e "NGINX_PORT=3000" \
+            -e "PUID=${PUID}" \
+            -e "PGID=${PGID}" \
+            -e "UMASK=${UMASK}" \
+            -e "TZ=${TZ}" \
+            "$DOCKER_IMAGE"
+
+        if [ $? -eq 0 ]; then
+            echo "MoviePilot 已启动，访问地址: http://$(hostname):${NGINX_PORT}"
+            exit 0
+        else
+            echo "启动失败，请检查 Docker 日志"
+            exit 1
+        fi
+        ;;
+
+    stop)
+        echo "正在停止 MoviePilot..."
+        docker stop "$CONTAINER_NAME" 2>/dev/null
+        exit $?
+        ;;
+
+    status)
+        # 返回 0 表示运行中，其他表示已停止
+        if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+            exit 0
+        else
+            exit 1
+        fi
+        ;;
+
+    log)
+        docker logs --tail 100 "$CONTAINER_NAME" 2>&1
+        exit 0
+        ;;
+
+    *)
+        echo "Usage: $0 {start|stop|status|log}"
+        exit 1
+        ;;
+esac

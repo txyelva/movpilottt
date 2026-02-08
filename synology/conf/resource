@@ -1,0 +1,11 @@
+{
+    "port-config": {
+        "protocol-file": "docker-compose.yml",
+        "port": [{
+            "title": "MoviePilot Web UI",
+            "desc": "MoviePilot HTTP 端口",
+            "port_forward": true,
+            "dst.ports": "3000/tcp"
+        }]
+    }
+}

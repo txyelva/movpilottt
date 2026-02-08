@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# MoviePilot SPK - 安装后脚本
+# 在套件安装完成后执行：创建目录、写入配置、拉取镜像
+#
+
+PACKAGE_NAME="MoviePilot"
+PACKAGE_DIR="/var/packages/${PACKAGE_NAME}/target"
+CONFIG_DIR="/volume1/docker/moviepilot/config"
+DOCKER_IMAGE="txyelva/movpilottt:latest"
+
+# 从向导获取用户配置（如果有）
+if [ -n "$wizard_port" ]; then
+    PORT="$wizard_port"
+else
+    PORT="3000"
+fi
+
+if [ -n "$wizard_config_dir" ]; then
+    CONFIG_DIR="$wizard_config_dir"
+fi
+
+# 创建配置目录
+mkdir -p "$CONFIG_DIR"
+
+# 生成 .env 文件
+ENV_FILE="${PACKAGE_DIR}/.env"
+cat > "$ENV_FILE" <<EOF
+# MoviePilot 配置 - 由 SPK 安装向导生成
+# 修改后需重启套件生效
+DOCKER_IMAGE=${DOCKER_IMAGE}
+CONFIG_DIR=${CONFIG_DIR}
+NGINX_PORT=${PORT}
+MOVIEPILOT_AUTO_UPDATE=false
+PUID=1000
+PGID=1000
+UMASK=000
+TZ=Asia/Shanghai
+EOF
+
+# 拉取 Docker 镜像
+echo "正在拉取 Docker 镜像: ${DOCKER_IMAGE}"
+docker pull "$DOCKER_IMAGE" 2>&1 || {
+    echo "警告: 镜像拉取失败，请确保网络可用，套件启动时会重试"
+}
+
+exit 0
