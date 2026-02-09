@@ -66,10 +66,11 @@ WORKDIR /app
 COPY requirements.in requirements.in
 RUN python3 -m venv ${VENV_PATH} \
     && pip install --upgrade "pip<25.0" \
-    && pip install "setuptools>=78.0" "Cython" "pip-tools<7.5" \
-    && pip-compile requirements.in \
+    && pip install "setuptools>=78.0" "wheel" "Cython" "pip-tools<7.5" \
+    && pip-compile --allow-unsafe requirements.in \
     && pip install -r requirements.txt \
-    && pip install "setuptools>=78.0"
+    && pip install --force-reinstall "setuptools>=78.0" \
+    && python3 -c "import pkg_resources; print('pkg_resources OK:', pkg_resources.__file__)"
 
 # 下载准备代码
 FROM prepare_package AS prepare_code

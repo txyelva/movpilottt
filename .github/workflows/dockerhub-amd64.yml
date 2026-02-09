@@ -37,6 +37,7 @@ jobs:
           file: docker/Dockerfile
           platforms: linux/amd64
           push: true
+          no-cache: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ inputs.tag }}
             ${{ env.IMAGE_NAME }}:latest
