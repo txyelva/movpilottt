@@ -66,10 +66,9 @@ WORKDIR /app
 COPY requirements.in requirements.in
 RUN python3 -m venv ${VENV_PATH} \
     && pip install --upgrade "pip<25.0" \
-    && pip install "Cython" "pip-tools>=7.0,<7.5" \
+    && pip install "Cython" "pip-tools<7.5" \
     && pip-compile requirements.in \
-    && pip install -r requirements.txt \
-    && pip install "setuptools>=78.0" "wheel"
+    && pip install -r requirements.txt
 
 # 下载准备代码
 FROM prepare_package AS prepare_code
@@ -92,6 +91,9 @@ FROM prepare_package AS final
 
 # python 环境
 COPY --from=prepare_venv --chmod=777 ${VENV_PATH} ${VENV_PATH}
+
+# 确保 setuptools/pkg_resources 在 venv 中可用（slim 镜像默认不含）
+RUN ${VENV_PATH}/bin/pip install --no-cache-dir "setuptools>=78.0"
 
 # playwright 环境
 RUN playwright install-deps chromium \
