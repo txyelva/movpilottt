@@ -272,6 +272,13 @@ else
     INFO "没有由非系统环境导入的变量需要清理。"
 fi
 
+# 确保 setuptools/pkg_resources 在 venv 中可用（auto-update 可能导致依赖丢失）
+INFO "→ 检查 setuptools (pkg_resources) ..."
+if ! ${VENV_PATH}/bin/python3 -c "import pkg_resources" 2>/dev/null; then
+    WARN "pkg_resources 缺失，正在安装 setuptools..."
+    ${VENV_PATH}/bin/pip install --no-cache-dir -q "setuptools>=78.0" 2>/dev/null || true
+fi
+
 # 启动后端服务
 INFO "→ 启动后端服务..."
 if [ "${START_NOGOSU:-false}" = "true" ]; then
